@@ -1,0 +1,41 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Env
+.env
+.env.*
+
+# Build
+dist/
+build/
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+frontend-web/node_modules/
+frontend-web/dist/
+
+# Backend
+backend/node_modules/
+backend/dist/
+
+# Mobile
+frontend-mobile/node_modules/
+.expo/
+
+# Prisma
+prisma/migrations/
+
+# Editor
+.vscode/
+.idea/
+
+#documentación
+documentacion/
