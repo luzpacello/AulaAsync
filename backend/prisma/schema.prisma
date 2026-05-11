@@ -1,13 +1,190 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+
+}
+
+model Usuario {
+  id        Int @id @default(autoincrement())
+  nombre    String
+  password  String
+
+  colegios  Colegio[]
+
+  createdAt DateTime @default(now())
+}
+
+model Colegio {
+  id            Int @id @default(autoincrement())
+  nombre        String
+  nombreComodo  String?
+
+  usuarioId     Int
+  usuario       Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  cursos        Curso[]
+  materias      Materia[]
+}
+
+model Curso {
+  id           Int       @id @default(autoincrement())
+  anio         Int
+  division     String
+  orientacion  String?
+  ciclo        String?
+
+  colegioId    Int
+  colegio      Colegio   @relation(fields: [colegioId], references: [id], onDelete: Cascade)
+
+  cursadas     Cursada[]
+  alumnos      Alumno[]
+}
+
+model Materia {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+
+  colegioId   Int
+  colegio     Colegio   @relation(fields: [colegioId], references: [id], onDelete: Cascade)
+
+  cursadas    Cursada[]
+}
+
+model Cursada {
+  id           Int        @id @default(autoincrement())
+
+  cursoId      Int
+  materiaId    Int
+
+  curso        Curso      @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  materia      Materia    @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  clases       Clase[]
+  evaluaciones Evaluacion[]
+  horarios     HorarioCursada[]
+  tps          Tp[]
+  asistencias Asistencia[]
+
+  @@unique([cursoId, materiaId]) // evita duplicados
+}
+
+model Alumno {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+  apellido    String
+  documento   String
+
+  cursoId     Int
+
+  curso       Curso     @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+
+  asistencias Asistencia[]
+  notas       Nota[]
+  entregas    Entrega[]
+
+  @@unique(documento)
+}
+
+model Clase {
+  id            Int       @id @default(autoincrement())
+  fecha         DateTime
+  tema          String?
+  actividades   String?
+  observaciones String?
+  estado        String?
+
+  cursadaId     Int
+  cursada       Cursada  @relation(fields: [cursadaId], references: [id], onDelete: Cascade)
+}
+
+model Evaluacion {
+  id         Int             @id @default(autoincrement())
+  fecha      DateTime
+  temas      String
+  tipo       TipoEvaluacion
+
+  cursadaId  Int
+  cursada    Cursada         @relation(fields: [cursadaId], references: [id], onDelete: Cascade)
+
+  notas      Nota[]
+}
+
+model Nota {
+  id            Int        @id @default(autoincrement())
+  calificacion  Float
+
+  evaluacionId  Int
+  alumnoId      Int
+
+  evaluacion    Evaluacion @relation(fields: [evaluacionId], references: [id], onDelete: Cascade)
+  alumno        Alumno     @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([evaluacionId, alumnoId]) // una nota por evaluación
+}
+
+model Asistencia {
+  id         Int      @id @default(autoincrement())
+  fecha      DateTime
+  asistio    Boolean
+
+  alumnoId   Int
+  cursadaId  Int
+
+  alumno     Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  cursada    Cursada  @relation(fields: [cursadaId], references: [id], onDelete: Cascade)
+
+  @@unique([alumnoId, cursadaId, fecha]) // evita duplicados
+}
+
+model HorarioCursada {
+  id          Int      @id @default(autoincrement())
+  dia         String
+  horaInicio  String
+  horaFin     String
+
+  cursadaId   Int
+  cursada     Cursada @relation(fields: [cursadaId], references: [id], onDelete: Cascade)
+}
+
+model Tp {
+  id            Int       @id @default(autoincrement())
+  titulo        String
+  fechaEntrega  DateTime
+  estado        EstadoTp
+
+  cursadaId     Int
+  cursada       Cursada  @relation(fields: [cursadaId], references: [id], onDelete: Cascade)
+
+  entregas      Entrega[]
+}
+
+model Entrega {
+  id            Int       @id @default(autoincrement())
+  fechaEntrega  DateTime
+  nota          Float?
+  observaciones String?
+  tipoEntrega   String
+
+  tpId          Int
+  alumnoId      Int
+
+  tp            Tp       @relation(fields: [tpId], references: [id], onDelete: Cascade)
+  alumno        Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([tpId, alumnoId]) // una entrega por alumno
+}
+
+enum TipoEvaluacion {
+  ESCRITO
+  ORAL
+  GRUPAL
+}
+
+enum EstadoTp {
+  ENTREGADO
+  FUERA_TERMINO
+  SIN_ENTREGAR
 }
