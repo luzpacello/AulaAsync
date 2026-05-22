@@ -6,20 +6,10 @@ import { useState } from "react";
 
 export default function CursoScreen() {
 
-    const navToDash = () => {
-        router.replace('/drawer');
-    }
-
-    const [colegio, setColegio] = useState<number | null>(null);
-    
-    const colegios = [
-      { value: 1, label: "Colegio A" },
-      { value: 2, label: "Colegio B" },
-    ];
 
   return (
     <View style={styles.container}>
-      <Text>Hola mundo</Text>
+      <Text>...</Text>
     </View>
   );
 }
@@ -27,9 +17,7 @@ export default function CursoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#023047",
-    justifyContent: 'center',
-    alignItems: 'center',
+    margin: 10,
   },
 
   card: {

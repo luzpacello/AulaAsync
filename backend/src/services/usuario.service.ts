@@ -1,23 +1,21 @@
 import prisma from '../config/db.js';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 10; 
 
 export const UsuarioService = {
-
-  // creacion de Usuario - No se utilizará en producción, 
-  // ya que el usuario estara predefinido
   async crearUsuario(data: {nombre: string, password: string}) {
-    return await prisma.usuario.create({ data });
-  },
+    const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
-  // metodos para pruebas
-  async obtenerTodos() {
-    return await prisma.usuario.findMany({
-      select: { id: true, nombre: true }
+    return await prisma.usuario.create({ 
+      data: {
+        ...data,
+        password: hashedPassword
+      } 
     });
   },
 
-  async eliminarUsuario(id: String){
-    return await prisma.usuario.delete({
-      where: { id }
-    });
+  async validarPassword(passwordIngresada: string, passwordHasheada: string) {
+    return await bcrypt.compare(passwordIngresada, passwordHasheada);
   }
 };

@@ -27,6 +27,7 @@ model Colegio {
 
   cursos        Curso[]
   materias      Materia[]
+  eventos       Evento[]
 }
 
 model Curso {
@@ -175,6 +176,15 @@ model Entrega {
   alumno        Alumno   @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
 
   @@unique([tpId, alumnoId]) // una entrega por alumno
+}
+
+model Evento {
+  id        Int         @id @default(autoincrement())
+  titulo    String
+  tipo      String //"EVALUACION", "ENTREGA", "REUNION"
+  fecha     DateTime
+  colegioId Int
+  colegio   Colegio     @relation(fields: [colegioId], references: [id])
 }
 
 enum TipoEvaluacion {

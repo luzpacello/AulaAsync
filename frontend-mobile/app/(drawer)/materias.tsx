@@ -1,377 +1,269 @@
-import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, ScrollView } from "react-native";
-import { useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { Dropdown } from "react-native-element-dropdown";
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { obtenerMateriasConDetalle, MateriaConCursadas, HorarioDetalle } from '@/src/services/materias.service';
 
 export default function MateriasScreen() {
-  const [abierta, setAbierta] = useState<number | null>(null);
+  const router = useRouter();
+  const [materias, setMaterias] = useState<MateriaConCursadas[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [curso, setCurso] = useState<number | null>(null);
+  // Estados para Modales
+  const [modalMateriaVisible, setModalMateriaVisible] = useState(false);
+  const [modalCursadaVisible, setModalCursadaVisible] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const [visible, setVisible] = useState(false);
-  const [visible1, setVisible1] = useState(false);
+  // Estados de Formulario
+  const [nuevaMateria, setNuevaMateria] = useState('');
+  const [materiaSeleccionada, setMateriaSeleccionada] = useState<number | null>(null);
 
-  const materias = [
-    {
-      id: 1,
-      nombre: "Matemática",
-      cursos: [
-        { id: 1, nombre: "1°A" },
-        { id: 2, nombre: "2°B" },
-      ],
-    },
-    {
-      id: 2,
-      nombre: "Lengua",
-      cursos: [{ id: 3, nombre: "3°A" }],
-    },
-  ];
+  const [nuevoCurso, setNuevoCurso] = useState('');
+  const [horariosTemporales, setHorariosTemporales] = useState<HorarioDetalle[]>([]);
+  const [diaSeleccionado, setDiaSeleccionado] = useState('Lunes');
+  const [horaInicio, setHoraInicio] = useState('');
+  const [horaFin, setHoraFin] = useState('');
 
-  const cursosDisp = [
-    { value: 1, label: "1°A" },
-    { value: 2, label: "2°B" },
-    { value: 3, label: "3°A" }
-  ];
+  useEffect(() => {
+    obtenerMateriasConDetalle()
+      .then(data => {
+        setMaterias(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-    const [cursoSeleccionado, setCursoSeleccionado] = useState(null);
+  const agregarMateria = () => {
+    if (nuevaMateria.trim()) {
+      const nuevoObj: MateriaConCursadas = {
+        id: Date.now(),
+        nombre: nuevaMateria,
+        cursadas: []
+      };
+      setMaterias([...materias, nuevoObj]);
+      setNuevaMateria('');
+      setModalMateriaVisible(false);
+    }
+  };
 
-    const [horarios, setHorarios] = useState([
-    { dia: "", desde: "", hasta: "" }
-    ]);
-
-    const agregarHorario = () => {
-        setHorarios([...horarios, { dia: "", desde: "", hasta: "" }]);
-    };
-
-    const eliminarHorario = (index) => {
-        setHorarios(horarios.filter((_, i) => i !== index));
-    };
-
-    const actualizarHorario = (index, campo, valor) => {
-        const nuevos = [...horarios];
-
-        nuevos[index][campo] = valor;
-
-        setHorarios(nuevos);
-    };
-  return (
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color="#023047" />
+      </View>
+    );
+  }
+  
+    return (
     <View style={styles.container}>
-        <TouchableOpacity onPress={() => setVisible(true)} style={styles.button} >
-            <Ionicons name="add" size={30}  />
-            <Text style={styles.buttonText}>AGREGAR MATERIA</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Mis Materias</Text>
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={() => setModalMateriaVisible(true)}
+        >
+          <MaterialCommunityIcons name="plus" size={24} color="#white" />
+          <Text style={styles.addButtonText}>Nueva Materia</Text>
         </TouchableOpacity>
-        <Modal visible={visible} transparent={true} animationType="slide" >
-            <View style={styles.modalView}>
-                <View style={styles.card} >
-                    <Text style={styles.label}>Nombre de la materia</Text>
-                    <TextInput placeholder="MATEMATICAS" 
-                        placeholderTextColor="#ccc"
-                        style={styles.input}
-                    ></TextInput>
-                    <View style={styles.lineaBoton}>
-                        <TouchableOpacity onPress={() => setVisible(false)} style={styles.buttonAcccion}>
-                        <Text style={styles.buttonText}>CERRAR</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.buttonAcccion}>
-                            <Text style={styles.buttonText}>GUARDAR</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </View>
-        </Modal>
+      </View>
 
-        {materias.map((materia) => {
-            const isOpen = abierta === materia.id;
+      <FlatList
+        data={materias}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.materiaCard}>
+            <TouchableOpacity 
+              style={styles.materiaHeader}
+              onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
+            >
+              <Text style={styles.materiaNombre}>{item.nombre}</Text>
+              <MaterialCommunityIcons 
+                name={expandedId === item.id ? "chevron-up" : "chevron-down"} 
+                size={24} 
+              />
+            </TouchableOpacity>
 
-            return (
-                <View key={materia.id} style={styles.itemMateria} >
-                    {/* HEADER */}
-                    <TouchableOpacity
-                        onPress={() =>
-                            setAbierta(isOpen ? null : materia.id)
-                        }
-                        style={styles.headerItem}
-                    >
-                        <Ionicons
-                            name={isOpen ? "caret-down" : "caret-forward"}
-                            size={18}
-                            style={{ marginRight: 8}}
-                        />
-                        <Text style={{ fontWeight: "bold", fontSize: 20 }}>
-                            {materia.nombre}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* CONTENIDO */}
-                    {isOpen && (
-                    <View style={{ padding: 12}}>
-                        {materia.cursos.map((curso) => (
-                        <TouchableOpacity
-                            key={curso.id}
-                            onPress={() => router.push(`/curso/${curso.id}`)}
-                            style={styles.listItem}
-                        >
-                            <Ionicons name="ellipse" size={10} />
-                            <Text style={styles.item}>
-                                {curso.nombre}
-                            </Text>
-                        </TouchableOpacity>
-                        ))}
-                        <TouchableOpacity onPress={() => setVisible1(true)} style={styles.button2} >
-                            <Text style={styles.buttonText}>
-                                AGREGAR CURSO
-                            </Text>
-                        </TouchableOpacity>
-                        <Modal visible={visible1} transparent animationType="slide">
-                        <View
-                            style={{
-                            flex: 1,
-                            backgroundColor: "rgba(0,0,0,0.5)",
-                            justifyContent: "center",
-                            }}
-                        >
-                            <View
-                            style={{
-                                margin: 20,
-                                backgroundColor: "white",
-                                padding: 20,
-                                borderRadius: 10,
-                                maxHeight: "80%",
-                            }}
-                            >
-                            <ScrollView>
-                                
-                                {/* TÍTULO */}
-                                <Text style={ styles.titulo }>
-                                Crear cursada
-                                </Text>
-
-                                {/* CURSO */}
-                                <Text style={styles.label}>Curso</Text>
-                                <Dropdown
-                                data={cursosDisp}
-                                labelField="label"
-                                valueField="value"
-                                placeholder="Seleccionar curso"
-                                value={cursoSeleccionado}
-                                onChange={(item) => setCursoSeleccionado(item.value)}
-                                style={{
-                                    borderWidth: 1,
-                                    borderRadius: 8,
-                                    padding: 10,
-                                    marginBottom: 12,
-                                }}
-                                />
-
-                                {/* HORARIOS */}
-                                {horarios.map((h, index) => (
-                                <View
-                                    key={index}
-                                    style={{
-                                    borderWidth: 1,
-                                    borderRadius: 8,
-                                    padding: 10,
-                                    marginBottom: 10,
-                                    }}
-                                >
-                                    <Text style={styles.label}>Día</Text>
-                                    <TextInput
-                                    placeholder="Lunes"
-                                    value={h.dia}
-                                    onChangeText={(text) =>
-                                        actualizarHorario(index, "dia", text)
-                                    }
-                                    style={ styles.inputText }
-                                    />
-
-                                    <Text style={styles.label}>Desde</Text>
-                                    <TextInput
-                                    placeholder="08:00"
-                                    value={h.desde}
-                                    onChangeText={(text) =>
-                                        actualizarHorario(index, "desde", text)
-                                    }
-                                    style={ styles.inputText }
-                                    />
-
-                                    <Text style={styles.label}>Hasta</Text>
-                                    <TextInput
-                                    placeholder="10:00"
-                                    value={h.hasta}
-                                    onChangeText={(text) =>
-                                        actualizarHorario(index, "hasta", text)
-                                    }
-                                    style={ styles.inputText }
-                                    />
-
-                                    <TouchableOpacity onPress={() => eliminarHorario(index)}>
-                                    <Text style={ styles.text }>Eliminar</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                ))}
-
-                                {/* AGREGAR */}
-                                <TouchableOpacity onPress={agregarHorario}>
-                                <Text style={ styles.text }>
-                                    + Agregar día
-                                </Text>
-                                </TouchableOpacity>
-
-                                {/* BOTONES */}
-                                <View style={styles.lineaBoton}>
-                                    <TouchableOpacity
-                                    onPress={() => {
-                                        console.log({
-                                        cursoSeleccionado,
-                                        horarios,
-                                        });
-                                        setVisible(false);
-                                    }}
-                                    style={styles.buttonAcccion}
-                                    >
-                                        <Text style={styles.buttonText}>
-                                            Guardar
-                                        </Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity onPress={() => setVisible1(false)} style={styles.buttonAcccion}>
-                                        <Text style={styles.buttonText}>Cancelar</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                
-
-                            </ScrollView>
-                            </View>
-                        </View>
-                        </Modal>
-                    </View>
-                )}
+            {expandedId === item.id && (
+              <View style={styles.cursadasContainer}>
+                {item.cursadas.map(c => (
+                  <TouchableOpacity 
+                    key={c.id} 
+                    style={styles.cursadaItem}
+                    onPress={() => {
+                      router.push({
+                          pathname: "/cursada/[id]",
+                          params: { id: c.id.toString(), nombreMateria: item.nombre, curso: c.cursoLabel}
+                      });
+                    }}
+                  >
+                    <Text style={styles.cursadaText}>Curso: {c.cursoLabel}</Text>
+                    {c.horarios.map((h, i) => (
+                      <Text key={i} style={styles.horarioText}>{h.dia}: {h.inicio} - {h.fin}</Text>
+                    ))}
+                  </TouchableOpacity>
+                ))}
+                
+                <TouchableOpacity 
+                  style={styles.addCursadaBtn}
+                  onPress={() => {
+                    setMateriaSeleccionada(item.id);
+                    setModalCursadaVisible(true);
+                  }}
+                >
+                  <Text style={styles.addCursadaBtnText}>+ Agregar Cursada</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        );
-      })}
+        )}
+      />
+
+      {/* MODAL AGREGAR MATERIA */}
+      <Modal visible={modalMateriaVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Nueva Materia</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre de la materia"
+              value={nuevaMateria}
+              onChangeText={setNuevaMateria}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setModalMateriaVisible(false)} style={styles.btnCancel}>
+                <Text>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={agregarMateria} style={styles.btnSave}>
+                <Text style={{color: 'white'}}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL AGREGAR CURSADA */}
+<Modal visible={modalCursadaVisible} animationType="fade" transparent>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Configurar Cursada</Text>
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Ej: 4to Año - División A"
+        value={nuevoCurso}
+        onChangeText={setNuevoCurso}
+      />
+
+      <View style={styles.separator} />
+      
+      <Text style={styles.subTitle}>Agregar Días y Horarios</Text>
+      
+      {/* Formulario rápido para un día */}
+      <View style={styles.row}>
+        <TextInput 
+          style={[styles.input, {flex: 2}]} 
+          placeholder="Día (L, M, Mi...)" 
+          value={diaSeleccionado}
+          onChangeText={setDiaSeleccionado}
+        />
+        <TextInput 
+          style={[styles.input, {flex: 1, marginLeft: 5}]} 
+          placeholder="Inicio" 
+          value={horaInicio}
+          onChangeText={setHoraInicio}
+        />
+        <TextInput 
+          style={[styles.input, {flex: 1, marginLeft: 5}]} 
+          placeholder="Fin" 
+          value={horaFin}
+          onChangeText={setHoraFin}
+        />
+      </View>
+
+      <TouchableOpacity 
+        style={styles.btnAddDetail} 
+        onPress={() => {
+          if(horaInicio && horaFin){
+            setHorariosTemporales([...horariosTemporales, { dia: diaSeleccionado, inicio: horaInicio, fin: horaFin }]);
+            setHoraInicio(''); setHoraFin(''); // Limpiamos para el próximo
+          }
+        }}
+      >
+        <Text style={styles.btnAddDetailText}>+ Agregar Día</Text>
+      </TouchableOpacity>
+
+      {/* Lista de días agregados (maqueta visual) */}
+      <View style={styles.tempList}>
+        {horariosTemporales.map((h, i) => (
+          <View key={i} style={styles.tempItem}>
+            <Text style={styles.tempItemText}>{h.dia}: {h.inicio} - {h.fin}</Text>
+            <TouchableOpacity onPress={() => setHorariosTemporales(horariosTemporales.filter((_, idx) => idx !== i))}>
+                <MaterialCommunityIcons name="delete" size={18} color="red" />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.modalButtons}>
+        <TouchableOpacity 
+          style={styles.btnCancel} 
+          onPress={() => {
+            setModalCursadaVisible(false);
+            setHorariosTemporales([]);
+          }}
+        >
+          <Text>Cancelar</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.btnSave} 
+          onPress={() => {
+            // Aquí iría la lógica para guardar en la materia correspondiente
+            console.log("Guardando:", { nuevoCurso, horariosTemporales });
+            setModalCursadaVisible(false);
+            setHorariosTemporales([]);
+            setNuevoCurso('');
+          }}
+        >
+          <Text style={{color: 'white', fontWeight: 'bold'}}>Guardar Cursada</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      padding: 10,
-    },
-
-    lineaBoton: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-    },
-
-    buttonAcccion: {
-        width: "45%",
-        backgroundColor: "#219EBC",
-        padding: 12,
-        borderRadius: 10,
-        marginVertical: 10,
-    },
-
-    button: {
-        width: "100%",
-        backgroundColor: "#219EBC",
-        padding: 12,
-        borderRadius: 10,
-        marginVertical: 10,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-
-    button2: {
-        width: "100%",
-        backgroundColor: "rgba(142, 202, 230, 0.5)",
-        padding: 8,
-        borderRadius: 10,
-        marginVertical: 5,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-
-    buttonText: {
-        color: "#023047",
-        textAlign: "center",
-        fontWeight: "bold",
-        fontSize: 20,
-    },
-
-    label: {
-        fontSize: 20,
-        marginVertical: 10,
-    },
-
-    input: {
-        borderWidth: 1,
-        borderColor: "#023047",
-        borderRadius: 10,
-        padding: 15,
-        fontWeight: 500,
-        marginBottom: 10,
-    },
-
-    card: {
-        width: "80%",
-        backgroundColor: "white",
-        padding: 20,
-        borderRadius: 10,
-    },
-
-    itemMateria: {
-        marginBottom: 12,
-        borderWidth: 1,
-        borderRadius: 8,
-        overflow: "hidden",
-    },
-
-    headerItem: {
-        padding: 14,
-        backgroundColor: "#eee",
-        flexDirection: "row",
-        alignItems: "center",
-    },
-
-    item: {
-        paddingHorizontal: 4,
-        fontSize: 20, 
-        fontWeight: 600,
-    },
-
-    listItem: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 4, 
-        paddingHorizontal: 15,
-    },
-
-    modalView: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-
-    titulo: {
-      fontSize: 25,
-      textAlign: "center",
-      fontWeight: "bold",
-      color: "#023047",
-    },
-
-    inputText: {
-        fontSize: 18,
-        borderBottomWidth: 1, 
-        marginBottom: 4
-    },
-
-    text: {
-        fontSize: 20,
-        padding: 3,
-    }
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 10 },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  addButton: { backgroundColor: '#6200ee', flexDirection: 'row', padding: 10, borderRadius: 10, alignItems: 'center' },
+  addButtonText: { color: 'white', marginLeft: 5, fontWeight: '600' },
+  materiaCard: { backgroundColor: 'white', borderRadius: 12, marginBottom: 10, overflow: 'hidden', elevation: 2 },
+  materiaHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 15, alignItems: 'center' },
+  materiaNombre: { fontSize: 18, fontWeight: '600' },
+  cursadasContainer: { padding: 15, backgroundColor: '#fafafa', borderTopWidth: 1, borderTopColor: '#eee' },
+  cursadaItem: { padding: 10, backgroundColor: 'white', borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#ddd' },
+  cursadaText: { fontWeight: 'bold', color: '#333' },
+  horarioText: { fontSize: 12, color: '#666' },
+  addCursadaBtn: { marginTop: 10, alignItems: 'center', padding: 8 },
+  addCursadaBtnText: { color: '#6200ee', fontWeight: 'bold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: 'white', borderRadius: 20, padding: 25 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15 },
+  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, marginBottom: 20 },
+  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end' },
+  btnCancel: { marginRight: 15, padding: 10 },
+  btnSave: { backgroundColor: '#6200ee', padding: 10, borderRadius: 8, paddingHorizontal: 20 },
+  separator: { height: 1, backgroundColor: '#eee', marginVertical: 15 },
+  subTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10, color: '#555' },
+  row: { flexDirection: 'row', marginBottom: 10, maxWidth: '80%' },
+  btnAddDetail: { alignSelf: 'flex-start', padding: 8, backgroundColor: '#6200ee20', borderRadius: 5, marginBottom: 15 },
+  btnAddDetailText: { color: '#6200ee', fontWeight: 'bold', fontSize: 12 },
+  tempList: { maxHeight: 120, marginBottom: 15 },
+  tempItem: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#f9f9f9', padding: 8, borderRadius: 5, marginBottom: 5 },
+  tempItemText: { fontSize: 13, color: '#333' },
+  inputSmall: { borderWidth: 1, borderColor: '#ddd', borderRadius: 5, padding: 8, fontSize: 12 }
 });

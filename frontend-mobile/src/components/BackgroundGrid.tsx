@@ -64,13 +64,6 @@ export default function BackgroundGrid({ children }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0f172a",
-  },
-
-  content: {
-    flex: 1,
-    zIndex: 10,
-  },
+  container: { flex: 1, backgroundColor: "#0f172a", },
+  content: { flex: 1, zIndex: 10, },
 });

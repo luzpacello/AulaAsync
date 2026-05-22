@@ -15,10 +15,36 @@ export const MateriaService = {
   },
 
   // Leer todas
-  async getMaterias() {
-    return await prisma.materia.findMany({
-      include: { colegio: true }
+  async getMaterias(colegioId: number) {
+    const materias =  await prisma.materia.findMany({
+      where: { colegioId },
+      include: {
+        cursadas: {
+          include: {
+            curso: {
+              select: {
+                id: true,
+                anio: true,
+                division: true
+              }
+            },
+            horarios: true
+          }
+        } 
+      },
+      orderBy: {nombre: 'asc'}
     });
+
+    return materias.map(materia => ({
+      id: materia.id,
+      nombre: materia.nombre,
+      cursos: materia.cursadas.map(c => ({
+        cursadaId: c.id,
+        id: c.curso.id,
+        nombre: `${c.curso.anio}° ${c.curso.division}`,
+        horarios: c.horarios
+      }))
+    }));
   },
 
   // Actualizar

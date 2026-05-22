@@ -1,8 +1,9 @@
 import { Color, Link, router } from "expo-router";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Dimensions, } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
-import { useState } from "react";
-import BackgroundGrid from "./components/BackgroundGrid";
+import { useState, useEffect } from "react";
+import BackgroundGrid from "../src/components/BackgroundGrid";
+import { getColegiosDropdown } from "../src/mocks/colegiosMock";
 
 const { width, height } = Dimensions.get('window');
 
@@ -12,12 +13,18 @@ export default function LoginScreen() {
         router.replace('/(drawer)');
     }
 
-    const [colegio, setColegio] = useState<number | null>(null);
-    
-    const colegios = [
-      { value: 1, label: "Colegio A" },
-      { value: 2, label: "Colegio B" },
-    ];
+    const [listaColegios, setListaColegios] = useState([]);
+    const [colegioSeleccionado, setColegioSeleccionado] = useState(null);
+    const [loadingData, setLoadingData] = useState(true);
+
+    // Cargar dropdown al iniciar
+    useEffect(() => {
+      getColegiosDropdown()
+        .then((data) => {
+          setListaColegios(data);
+          setLoadingData(false);
+        });
+    }, []);
 
   return (
     <BackgroundGrid>
@@ -26,15 +33,17 @@ export default function LoginScreen() {
           <Text style={styles.title}>Iniciar sesión</Text>
           <Dropdown 
             style={styles.input}
-            data={colegios}
+            data={listaColegios}
             labelField="label"
             valueField="value"
             placeholder="Elegir curso..."
             placeholderStyle={{color:"white"}}
             selectedTextStyle={{color:"white", fontWeight: 500}}
-            containerStyle={{borderRadius:25}}
-            value={colegio}
-            onChange={(item) => setColegio(item.value)}
+            containerStyle={{borderBottomEndRadius: 25, borderBottomStartRadius: 25, borderTopStartRadius:5, borderTopEndRadius: 5 ,backgroundColor: "rgba(2, 48, 71, 1)"}}
+            itemTextStyle={{color: "white"}}
+            activeColor="rgba(2, 48, 71, 0.75)"
+            value={colegioSeleccionado}
+            onChange={(item) => setColegioSeleccionado(item.value)}
           />
           <TextInput placeholder="Contraseña"
               placeholderTextColor="#ccc"
@@ -50,65 +59,11 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',    
-  },
-
-  card: {
-    width: "85%",
-    padding: 50,
-    borderRadius: 25,
-  },
-
-  title: {
-    fontSize: 30,
-    color: "white",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-
-  input: {
-    borderWidth: 1,
-    backgroundColor: "rgba(2, 48, 71, 0.5)",
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 10,
-    padding: 15,
-    textAlign: "center",
-    color: "white",
-    fontWeight: 600,
-    marginBottom: 10,
-  },
-
-  button: {
-    backgroundColor: "#023047",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
-  },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', },
+  card: { width: "85%", padding: 50, borderRadius: 25, backgroundColor: "hsla(0, 0%, 20%, 0.50)", },
+  title: { fontSize: 30, color: "white", textAlign: "center", marginBottom: 20, },
+  input: { borderWidth: 1, backgroundColor: "rgba(2, 48, 71, 0.5)", borderColor: "rgba(255, 255, 255, 0.2)",
+            borderRadius: 10, padding: 15, color: "white", fontWeight: 600, marginBottom: 10, },
+  button: { backgroundColor: "#023047", padding: 12, borderRadius: 10, marginTop: 10, },
+  buttonText: { color: "white", textAlign: "center", fontWeight: "bold", },
 });
-
-/* <div className="min-h-screen w-full bg-[#0f172a] relative">
-  {/* Dark Dotted Grid Background 
-  <div
-    className="absolute inset-0 z-0"
-    style={{
-      background: "#0f172a",
-      backgroundImage: `
-        radial-gradient(circle, rgba(139,92,246,0.6) 1px, transparent 1px),
-        radial-gradient(circle, rgba(59,130,246,0.4) 1px, transparent 1px),
-        radial-gradient(circle, rgba(236,72,153,0.5) 1px, transparent 1px)
-      `,
-      backgroundSize: "20px 20px, 40px 40px, 60px 60px",
-      backgroundPosition: "0 0, 10px 10px, 30px 30px",
-    }}
-  />
-     
-</div>*/

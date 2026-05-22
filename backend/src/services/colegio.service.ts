@@ -1,3 +1,4 @@
+import type { Colegio } from "@prisma/client";
 import prisma from "../config/db.js";
 
 export const ColegioService = {
@@ -24,11 +25,18 @@ export const ColegioService = {
     },
 
     // update colegios
-    async updateColegio(id: number, datos: { nombre?: string, nombreComodo?: string }) {
-        return await prisma.colegio.update({
-            where: { id },
-            data: datos,
-        });
+    async updateColegio(id: number, datos: Partial<Colegio>) {
+        try {
+            return await prisma.colegio.update({
+                where: { id },
+                data: datos,
+            });
+        } catch (error: any) {
+            if (error.code === 'P2025') {
+                throw new Error(`El colegio con ID ${id} no existe.`);
+            }
+            throw error;
+        }
     },
 
     async deleteColegio(id: number) {

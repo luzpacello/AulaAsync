@@ -27,7 +27,6 @@ export default function AlumnosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#023047",
     justifyContent: 'center',
     alignItems: 'center',
   },
