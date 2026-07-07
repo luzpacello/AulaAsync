@@ -5,7 +5,8 @@ import { authMiddleware } from '../middlewares/auth.middleware.js';
 const router = Router();
 
 // RUTAS PUBLICAS
-router.get('/selector', ColegioController.getColegiosPublic)
+router.get("/selector", ColegioController.getColegiosPublic);
+router.post("/", ColegioController.crearColegio);
 
 // RUTAS CON AUTH
 router.use(authMiddleware);
@@ -13,7 +14,6 @@ router.use(authMiddleware);
 // -- AJUSTES --
 router.get('/', ColegioController.listColegios);
 router.get('/:id', ColegioController.getColegioId);
-router.post('/', ColegioController.crearColegio);
 router.put('/:id', ColegioController.updateColegio);
 
 export default router;

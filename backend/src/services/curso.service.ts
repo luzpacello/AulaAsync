@@ -76,11 +76,5 @@ export const CursoService = {
         where: {id},
         data: datos
     });
-  },
-
-  async deteleCurso(id:number){
-    return await prisma.curso.delete({
-        where: {id}
-    });
   }
 };

@@ -1,64 +1,65 @@
 import prisma from '../config/db.js';
 
 export const MateriaService = {
-
-  // Crear
-  async createMateria(data: {nombre: string, colegioId: number}) {
-    return await prisma.materia.create({ data });
-  },
-
-  // Leer una por ID
-  async getMateriaId(id: number) {
-    return await prisma.materia.findUnique({
-      where: { id }
-    });
-  },
-
-  // Leer todas
-  async getMaterias(colegioId: number) {
-    const materias =  await prisma.materia.findMany({
-      where: { colegioId },
+  async getMaterias(colegioId: number, search?: string) {
+    return await prisma.materia.findMany({
+      where: {
+        colegioId,
+        ...(search && {
+          nombre: {
+            contains: search,
+            mode: "insensitive",
+          },
+        }),
+      },
       include: {
         cursadas: {
-          include: {
+          select: {
+            id: true,
             curso: {
               select: {
                 id: true,
                 anio: true,
-                division: true
-              }
+                division: true,
+              },
             },
-            horarios: true
-          }
-        } 
+          },
+          orderBy: [
+            {
+              curso: {
+                anio: "asc",
+              },
+            },
+          ],
+        },
       },
-      orderBy: {nombre: 'asc'}
+      orderBy: {
+        nombre: "asc",
+      },
     });
-
-    return materias.map(materia => ({
-      id: materia.id,
-      nombre: materia.nombre,
-      cursos: materia.cursadas.map(c => ({
-        cursadaId: c.id,
-        id: c.curso.id,
-        nombre: `${c.curso.anio}° ${c.curso.division}`,
-        horarios: c.horarios
-      }))
-    }));
   },
 
-  // Actualizar
-  async update(id: number, nuevoNombre: string) {
+  async getMateriaID(id: number) {
+    return await prisma.materia.findUnique({
+      where: {id},
+      include: {
+        cursadas: {
+          include: {
+            curso: true,
+          },
+        },
+      },
+    });
+  },
+
+  async creatrMateria(data: {nombre:string; colegioId: number;}) {
+    return await prisma.materia.create({data});
+  },
+
+  async updateMateria(id: number, datos: { nombre?: string;}) {
     return await prisma.materia.update({
       where: { id },
-      data: { nombre: nuevoNombre }
-    });
-  },
-
-  // Eliminar
-  async delete(id: number) {
-    return await prisma.materia.delete({ 
-      where: { id }
+      data: datos,
     });
   }
 };

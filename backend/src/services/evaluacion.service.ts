@@ -1,37 +1,58 @@
+import type { TipoEvaluacion } from '@prisma/client';
 import prisma from '../config/db.js';
 
+type EvaluacionData = {
+  fecha: Date;
+  temas: string;
+  tipo: TipoEvaluacion;
+};
+
 export const EvaluacionService = {
-  // 1. Crear la evaluación (el examen en sí)
-  async crearEvaluacion(data: { temas: string, fecha: string, tipo: 'ESCRITO' | 'ORAL' | 'GRUPAL', cursadaId: number }) {
-    return await prisma.evaluacion.create({
-      data: {
-        temas: data.temas,
-        fecha: new Date(data.fecha),
-        tipo: data.tipo,
-        cursadaId: data.cursadaId
+  async getEvaluaciones(cursadaId: number) {
+    return prisma.evaluacion.findMany({
+      where: { cursadaId },
+      select: {
+        id: true,
+        fecha: true,
+        temas: true,
+        tipo: true
+      },
+      orderBy: { fecha: "desc" }
+    });
+  },
+
+  async getEvaluacion(id: number) {
+    return prisma.evaluacion.findMany({
+      where: { id },
+      select: {
+        id: true,
+        fecha: true,
+        temas: true,
+        tipo: true,
+        cursadaId: true,
       }
     });
   },
 
-  // 2. Cargar notas masivamente (Igual que asistencia, usamos upsert)
-  async cargarNotasMasivas(evaluacionId: number, notas: { alumnoId: number, calificacion: number }[]) {
-    return await prisma.$transaction(
-      notas.map((n) =>
-        prisma.nota.upsert({
-          where: {
-            evaluacionId_alumnoId: {
-              evaluacionId: evaluacionId,
-              alumnoId: n.alumnoId,
-            },
-          },
-          update: { calificacion: n.calificacion },
-          create: {
-            evaluacionId: evaluacionId,
-            alumnoId: n.alumnoId,
-            calificacion: n.calificacion,
-          },
-        })
-      )
-    );
-  }
+  async createEvaluacion( cursadaId: number, data: EvaluacionData ){
+    return prisma.evaluacion.create({
+      data: {
+        ...data,
+        cursadaId
+      }
+    });
+  },
+
+  async updateEvaluacion( id: number, data: Partial<EvaluacionData> ){
+    return prisma.evaluacion.update({
+      where: { id },
+      data
+    });
+  },
+
+  async deleteEvaluacion( id: number ){
+    return prisma.evaluacion.delete({
+      where: { id }
+    });
+  },
 };

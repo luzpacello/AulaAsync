@@ -5,14 +5,42 @@ export const AlumnoService = {
     return await prisma.alumno.create({ data });
   },
 
-  async getAlumnoId(id: number) {
-    return await prisma.alumno.findUnique({
-        where: { id }
+  async getAlumnos(colegioId: number, search?: string) {
+    return await prisma.alumno.findMany({
+      where: {
+        curso: {
+          colegioId: colegioId
+        },
+        ...(search && {
+          OR: [
+            { apellido: { contains: search, mode: 'insensitive' } },
+            { nombre: { contains: search, mode: 'insensitive' } },
+            { documento: { contains: search, mode: 'insensitive' } }
+          ]
+        })
+      },
+      include: {
+        curso: {
+          select: {
+            anio: true,
+            division: true
+          }
+        }
+      },
+      orderBy: [
+        { apellido: 'asc' },
+        { nombre: 'asc' }
+      ]
     });
   },
 
-  async getAlumnos() {
-    return await prisma.alumno.findMany({});
+  async getAlumnoId(id: number) {
+    return await prisma.alumno.findUnique({
+      where: { id },
+      include: {
+        curso: true 
+      }
+    });
   },
 
   async getPorCurso(cursoId: number) {
@@ -22,30 +50,55 @@ export const AlumnoService = {
     });
   },
 
-  async updateAlumnos(id: number, datos: {nombre?: string, apellido?: string, documento?: string}) {
+  async updateAlumno(id: number, datos: { nombre?: string, apellido?: string, documento?: string, cursoId?: number }) {
     return await prisma.alumno.update({
-        where: { id },
-        data: datos
+      where: { id },
+      data: datos
     });
   },
 
-  async deleteAlumnos(id: number) {
+  async deleteAlumno(id: number) {
     return await prisma.alumno.delete({
-        where: { id }
+      where: { id }
     });
   },
-  // Para la "Ficha del Alumno" en la maqueta
+
   async obtenerDetalleAlumno(alumnoId: number) {
     return await prisma.alumno.findUnique({
       where: { id: alumnoId },
       include: {
-        notas: {
-          include: { evaluacion: true }
-        },
-        entregas: {
-          include: { tp: true }
-        },
-        asistencias: true
+        curso: {
+          include: {
+            cursadas: {
+              include: {
+                materia: true,
+                evaluaciones: {
+                  include: {
+                    notas: {
+                      where: {
+                        alumnoId
+                      }
+                    }
+                  }
+                },
+                tps: {
+                  include: {
+                    entregas: {
+                      where: {
+                        alumnoId
+                      }
+                    }
+                  }
+                },
+                asistencias: {
+                  where: {
+                    alumnoId
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     });
   }

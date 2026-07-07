@@ -77,6 +77,7 @@ model Alumno {
   nombre      String
   apellido    String
   documento   String
+  observaciones String?
 
   cursoId     Int
 
@@ -95,7 +96,6 @@ model Clase {
   tema          String?
   actividades   String?
   observaciones String?
-  estado        String?
 
   cursadaId     Int
   cursada       Cursada  @relation(fields: [cursadaId], references: [id], onDelete: Cascade)
@@ -142,7 +142,7 @@ model Asistencia {
 
 model HorarioCursada {
   id          Int      @id @default(autoincrement())
-  dia         String
+  dia         DiaSemana
   horaInicio  String
   horaFin     String
 
@@ -154,7 +154,6 @@ model Tp {
   id            Int       @id @default(autoincrement())
   titulo        String
   fechaEntrega  DateTime
-  estado        EstadoTp
 
   cursadaId     Int
   cursada       Cursada  @relation(fields: [cursadaId], references: [id], onDelete: Cascade)
@@ -167,7 +166,7 @@ model Entrega {
   fechaEntrega  DateTime
   nota          Float?
   observaciones String?
-  tipoEntrega   String
+  tipoEntrega   EstadoTp
 
   tpId          Int
   alumnoId      Int
@@ -197,4 +196,14 @@ enum EstadoTp {
   ENTREGADO
   FUERA_TERMINO
   SIN_ENTREGAR
+}
+
+enum DiaSemana {
+  DOMINGO
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
 }

@@ -1,27 +1,27 @@
 import prisma from "../config/db.js";
-
+import { DiaSemana } from "@prisma/client";
 export const DashboardService = {
   async obtenerDashboardHoy(colegioId: number) {
-    const hoy = new Date();
+    const fechaArg = new Date(new Date().toLocaleDateString("en-US",{ timeZone: "America/Argentina/Buenos_Aires" }));
 
-    const diasSemana = [
-      "DOMINGO", 
-      "LUNES",
-      "MARTES",
-      "MIERCOLES",
-      "JUEVES",
-      "VIERNES",
-      "SABADO"
+    const diasSemana: DiaSemana[] =[
+      DiaSemana.DOMINGO,
+      DiaSemana.LUNES,
+      DiaSemana.MARTES,
+      DiaSemana.MIERCOLES,
+      DiaSemana.JUEVES,
+      DiaSemana.VIERNES,
+      DiaSemana.SABADO
     ];
 
-    const diaActual = diasSemana[hoy.getDay()]!;
+    const diaActual = diasSemana[fechaArg.getDay()]!;
 
     // INICIO DEL DIA
-    const inicioDia = new Date(hoy);
+    const inicioDia = new Date(fechaArg);
     inicioDia.setHours(0, 0, 0, 0);
     // FIN DEL DIA
-    const finDia = new Date(hoy);
-    finDia.setHours(23, 59, 50, 999);
+    const finDia = new Date(fechaArg);
+    finDia.setHours(23, 59, 59, 999);
 
     // CLASES DEL DIA
     const clasesHoy =
@@ -29,7 +29,7 @@ export const DashboardService = {
         where: {
           dia: diaActual,
           cursada: {
-            curso: {
+            materia: {
               colegioId
             }
           }
@@ -54,7 +54,7 @@ export const DashboardService = {
           }
         },
 
-        orderBy: {horaFin: 'asc'}
+        orderBy: {horaInicio: 'asc'}
       });
 
     // EVENTOS DEL DIA

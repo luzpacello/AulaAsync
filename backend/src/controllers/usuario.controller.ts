@@ -10,9 +10,15 @@ export const registrarUsuario = async (req: Request, res: Response, next: NextFu
       return res.status(400).json({ error: 'Faltan datos obligatorios' });
     }
 
-    const nuevoUsuario = await UsuarioService.crearUsuario(nombre, password);
+    const nuevoUsuario = await UsuarioService.registrarUsuario({nombre, password});
     res.status(201).json(nuevoUsuario);
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "REGISTRO_BLOQUEADO"
+    ) {
+      return res.status(403).json({ error: "Ya eciste un administrador registrado" });
+    }
     next(error);
   }
 };

@@ -1,54 +1,118 @@
 import prisma from '../config/db.js';
+import type { $Enums } from '@prisma/client';
 
 export const CursadaService = {
-  async crearCursada(data: { 
-    cursoId: number, 
-    materiaId: number, 
-    horarios: { dia: string, horaInicio: string, horaFin: string }[] 
+  async createCursada(data: {
+    cursoId: number;
+    materiaId: number;
+    horarios: {
+      dia: $Enums.DiaSemana;
+      horaInicio: string;
+      horaFin: string;
+    }[];
   }) {
-    // Usamos $transaction para que se cree todo o nada
-    return await prisma.$transaction(async tx => {
-      // 1. Creamos la Cursada
+    return await prisma.$transaction(async (tx) => {
+      const existente = await tx.cursada.findUnique({
+        where: {
+          cursoId_materiaId: {
+            cursoId: data.cursoId,
+            materiaId: data.materiaId,
+          },
+        },
+      });
+      if (existente) {
+        throw new Error("La cursada ya existe.");
+      }
+
       const cursada = await tx.cursada.create({
         data: {
           cursoId: data.cursoId,
-          materiaId: data.materiaId
-        }
+          materiaId: data.materiaId,
+        },
       });
 
-      if (data.horarios && data.horarios.length > 0) {
+      if (data.horarios.length > 0) {
         await tx.horarioCursada.createMany({
-          data: data.horarios.map(h => ({
+          data: data.horarios.map((h) => ({
             dia: h.dia,
             horaInicio: h.horaInicio,
             horaFin: h.horaFin,
-            cursadaId: cursada.id
-          }))
+            cursadaId: cursada.id,
+          })),
         });
       }
 
-      return cursada;
+      return await tx.cursada.findUnique({
+        where: {
+          id: cursada.id,
+        },
+        include: {
+          materia: true,
+          curso: {
+            select: {
+              id: true,
+              anio: true,
+              division: true,
+              orientacion: true,
+              ciclo: true,
+            },
+          },
+          horarios: {
+            orderBy: [
+              { dia: "asc" },
+              { horaInicio: "asc" },
+            ],
+          },
+        },
+      });
     });
   },
 
-  async obtenerDetalleParaGestion(cursadaId: number) {
-    const detalle = await prisma.cursada.findUnique({
-      where: { id: cursadaId },
+  async getCursadaId(id: number) {
+    return await prisma.cursada.findUnique({
+      where: { id },
       include: {
-        materia: true,
+        materia:true,
         curso: {
-          include: {
-            alumnos: { orderBy: { apellido: 'asc' } }
+          select: {
+            id: true,
+            anio: true,
+            division: true,
+            orientacion: true,
+            ciclo: true,
+            _count: {
+              select: {
+                alumnos: true
+              }
+            }
           }
         },
-        horarios: true,
-        tps: { orderBy: { fechaEntrega: 'desc' } },
-        evaluaciones: { orderBy: { fecha: 'desc' } }
+        horarios: {
+          orderBy: [
+            { dia: "asc" },
+            { horaInicio: "asc" }
+          ]
+        }
       }
     });
-    
-    if (!detalle) throw new Error("Cursada no encontrada");
-    return detalle;
-  }
+  },
 
+  async existeCursada(cursoId: number, materiaId: number) {
+    return await prisma.cursada.findUnique({
+      where: {
+        cursoId_materiaId: {
+          cursoId,
+          materiaId
+        }
+      }
+    });
+  },
+
+  async deleteCursada(id: number) {
+    return await prisma.cursada.delete({
+      where: {
+        id
+      }
+    });
+  }
 };

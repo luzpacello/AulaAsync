@@ -2,47 +2,68 @@ import type { Colegio } from "@prisma/client";
 import prisma from "../config/db.js";
 
 export const ColegioService = {
-    //solamente el metodo de eliminacion no se utilizará en produccion
+  // Crear colegio
+  async createColegio(data: {
+    nombre: string;
+    nombreComodo?: string;
+    usuarioId: number;
+  }) {
+    return prisma.colegio.create({
+      data,
+    });
+  },
 
-    //creacion de Colegios
-    async createColegio(data: {nombre: string, nombreComodo: string, usuarioId: number}) {
-        return await prisma.colegio.create({ data });
-    },
+  // Obtener usuario administrador
+  async getAdministrador() {
+    return prisma.usuario.findFirst();
+  },
 
-    //obtener colegio con id para perfil que se visualizará
-    async getColegioId(id: number) {
-        return await prisma.colegio.findUnique({
-            where: { id },
-            include: { cursos: true, materias: true }
-        });
-    },
+  // Saber si ya existe algún colegio
+  async existeColegio() {
+    const cantidad = await prisma.colegio.count();
+    return cantidad > 0;
+  },
 
-    // obtener todos los colegios
-    async getColegios() {
-        return await prisma.colegio.findMany({
-            select: {id: true, nombreComodo: true}
-        });
-    },
+  // Obtener colegio por id
+  async getColegioId(id: number) {
+    return prisma.colegio.findUnique({
+      where: { id },
+      include: {
+        cursos: true,
+        materias: true,
+      },
+    });
+  },
 
-    // update colegios
-    async updateColegio(id: number, datos: Partial<Colegio>) {
-        try {
-            return await prisma.colegio.update({
-                where: { id },
-                data: datos,
-            });
-        } catch (error: any) {
-            if (error.code === 'P2025') {
-                throw new Error(`El colegio con ID ${id} no existe.`);
-            }
-            throw error;
-        }
-    },
+  // Listado de colegios
+  async getColegios() {
+    return prisma.colegio.findMany({
+      select: {
+        id: true,
+        nombreComodo: true,
+      },
+    });
+  },
 
-    async deleteColegio(id: number) {
-        return await prisma.colegio.delete({
-            where: { id }
-        });
+  // Actualizar
+  async updateColegio(id: number, datos: Partial<Colegio>) {
+    try {
+      return prisma.colegio.update({
+        where: { id },
+        data: datos,
+      });
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new Error(`El colegio con ID ${id} no existe.`);
+      }
+      throw error;
     }
+  },
 
+  // Eliminar (solo desarrollo)
+  async deleteColegio(id: number) {
+    return prisma.colegio.delete({
+      where: { id },
+    });
+  },
 };

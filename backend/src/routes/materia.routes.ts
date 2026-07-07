@@ -1,11 +1,19 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { obtenerMaterias } from "../controllers/materia.controller.js";
+import { 
+    getMaterias,
+    getMateriaId,
+    createMateria,
+    updateMateria
+} from "../controllers/materia.controller.js";
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', obtenerMaterias);
+router.get("/", getMaterias);
+router.get("/:id", getMateriaId);
+router.post("/", createMateria);
+router.put("/:id", updateMateria);
 
 export default router;

@@ -21,6 +21,7 @@ Thumbs.db
 # Vite
 frontend-web/node_modules/
 frontend-web/dist/
+frontend-web/.env/
 
 # Backend
 backend/node_modules/

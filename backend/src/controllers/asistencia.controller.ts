@@ -1,18 +1,31 @@
-import { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { AsistenciaService } from '../services/asistencia.service.js';
 
-export const registrarAsistencia = async (req: Request, res: Response) => {
+export const getAsistencias = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { cursadaId } = req.params;
-    const { fecha, registros } = req.body; // registros: [{ alumnoId, asistio }, ...]
-    
-    const resultado = await AsistenciaService.registrarPlanilla(
-      Number(cursadaId), 
-      fecha, 
-      registros
-    );
-    res.status(201).json(resultado);
+    const cursadaId = Number(req.body.cursadaId);
+    const fecha = new Date(req.query.fecha as string);
+
+    const asistencia = await AsistenciaService.getAsistencias(cursadaId, fecha);
+
+    if(!asistencia)
+      return res.json({ error: "No hay asistencias para la fecha dada"});
+
+    res.json(asistencia);
   } catch (error) {
-    res.status(500).json({ error: "Error al registrar asistencia" });
+    next(error);
+  }
+};
+
+export const guardarAsistencias = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const cursadaId = Number(req.body.cursadaId);
+    const { fecha, asistencias } = req.body;
+
+    await AsistenciaService.guardarAsistencias(cursadaId, fecha, asistencias);
+    
+    res.json({ message: "Asistencia registrada correctamente" });
+  } catch (error) {
+    next(error);
   }
 };
