@@ -101,5 +101,28 @@ export const AlumnoService = {
         }
       }
     });
+  },
+
+  async importarAlumnos(
+    cursoId: number,
+    alumnos: {
+        nombre: string;
+        apellido: string;
+          documento: string;
+      }[]
+  ) {
+
+      return await prisma.alumno.createMany({
+
+          data: alumnos.map(a => ({
+              nombre: a.nombre,
+              apellido: a.apellido,
+              documento: a.documento,
+              cursoId
+          })),
+
+          skipDuplicates: true
+      });
+
   }
 }

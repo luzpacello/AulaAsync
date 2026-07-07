@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { obtenerMateriasConDetalle, MateriaConCursadas, HorarioDetalle } from '@/src/services/materias.service';
+import { getMaterias, createMateria } from '@/src/services/materia';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function MateriasScreen() {
   const router = useRouter();
-  const [materias, setMaterias] = useState<MateriaConCursadas[]>([]);
+  const [materias, setMaterias] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Estados para Modales
@@ -24,25 +25,42 @@ export default function MateriasScreen() {
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
 
+  const cargarMaterias = async () => {
+    try {
+      setLoading(true);
+
+      const data = await getMaterias();
+
+      setMaterias(data);
+    } catch (error) {
+      console.error(error);
+      alert("No se pudieron cargar las materias");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    obtenerMateriasConDetalle()
-      .then(data => {
-        setMaterias(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    cargarMaterias();
   }, []);
 
-  const agregarMateria = () => {
-    if (nuevaMateria.trim()) {
-      const nuevoObj: MateriaConCursadas = {
-        id: Date.now(),
-        nombre: nuevaMateria,
-        cursadas: []
-      };
-      setMaterias([...materias, nuevoObj]);
-      setNuevaMateria('');
+  const agregarMateria = async () => {
+    try {
+      if (!nuevaMateria.trim()) {
+        alert("Ingrese un nombre para la materia");
+        return;
+      }
+
+      await createMateria(nuevaMateria);
+
+      await cargarMaterias();
+
+      setNuevaMateria("");
       setModalMateriaVisible(false);
+
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo crear la materia");
     }
   };
 
@@ -72,46 +90,62 @@ export default function MateriasScreen() {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.materiaCard}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.materiaHeader}
-              onPress={() => setExpandedId(expandedId === item.id ? null : item.id)}
+              onPress={() =>
+                setExpandedId(expandedId === item.id ? null : item.id)
+              }
             >
               <Text style={styles.materiaNombre}>{item.nombre}</Text>
-              <MaterialCommunityIcons 
-                name={expandedId === item.id ? "chevron-up" : "chevron-down"} 
-                size={24} 
+
+              <MaterialCommunityIcons
+                name={expandedId === item.id ? "chevron-up" : "chevron-down"}
+                size={24}
               />
             </TouchableOpacity>
 
             {expandedId === item.id && (
               <View style={styles.cursadasContainer}>
-                {item.cursadas.map(c => (
-                  <TouchableOpacity 
-                    key={c.id} 
-                    style={styles.cursadaItem}
-                    onPress={() => {
-                      router.push({
+
+                {item.cursadas.length > 0 ? (
+                  item.cursadas.map((c) => (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={styles.cursadaItem}
+                      onPress={() =>
+                        router.push({
                           pathname: "/cursada/[id]",
-                          params: { id: c.id.toString(), nombreMateria: item.nombre, curso: c.cursoLabel}
-                      });
-                    }}
-                  >
-                    <Text style={styles.cursadaText}>Curso: {c.cursoLabel}</Text>
-                    {c.horarios.map((h, i) => (
-                      <Text key={i} style={styles.horarioText}>{h.dia}: {h.inicio} - {h.fin}</Text>
-                    ))}
-                  </TouchableOpacity>
-                ))}
-                
-                <TouchableOpacity 
+                          params: {
+                            id: c.id.toString(),
+                            nombreMateria: item.nombre,
+                            curso: `${c.curso.anio}° ${c.curso.division}`,
+                          },
+                        })
+                      }
+                    >
+                      <Text style={styles.cursadaText}>
+                        {c.curso.anio}° {c.curso.division}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <Text style={styles.sinCursadas}>
+                    No hay cursadas creadas.
+                  </Text>
+                )}
+
+                <TouchableOpacity
                   style={styles.addCursadaBtn}
                   onPress={() => {
                     setMateriaSeleccionada(item.id);
                     setModalCursadaVisible(true);
                   }}
                 >
-                  <Text style={styles.addCursadaBtnText}>+ Agregar Cursada</Text>
+                  <Text style={styles.addCursadaBtnText}>
+                    + Agregar Cursada
+                  </Text>
                 </TouchableOpacity>
+
               </View>
             )}
           </View>
@@ -130,7 +164,10 @@ export default function MateriasScreen() {
               onChangeText={setNuevaMateria}
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity onPress={() => setModalMateriaVisible(false)} style={styles.btnCancel}>
+              <TouchableOpacity onPress={() => {
+                setNuevaMateria("");
+                setModalCursadaVisible(false);
+              }} style={styles.btnCancel}>
                 <Text>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={agregarMateria} style={styles.btnSave}>
@@ -265,5 +302,6 @@ const styles = StyleSheet.create({
   tempList: { maxHeight: 120, marginBottom: 15 },
   tempItem: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#f9f9f9', padding: 8, borderRadius: 5, marginBottom: 5 },
   tempItemText: { fontSize: 13, color: '#333' },
-  inputSmall: { borderWidth: 1, borderColor: '#ddd', borderRadius: 5, padding: 8, fontSize: 12 }
+  inputSmall: { borderWidth: 1, borderColor: '#ddd', borderRadius: 5, padding: 8, fontSize: 12 },
+  sinCursadas: { color: "#666", fontStyle: "italic",  marginVertical: 10,},
 });

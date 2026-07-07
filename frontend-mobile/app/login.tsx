@@ -3,19 +3,46 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Dimensions, } from
 import { Dropdown } from "react-native-element-dropdown";
 import { useState, useEffect } from "react";
 import BackgroundGrid from "../src/components/BackgroundGrid";
-import { getColegiosDropdown } from "../src/mocks/colegiosMock";
+import { getColegiosDropdown } from "../src/services/colegio";
+import { login } from "../src/services/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
 
-    const navToDash = () => {
-        router.replace('/(drawer)');
-    }
+    const handleLogin = async () => {
+      try {
+        if (!colegioSeleccionado) {
+          alert("Seleccione un colegio");
+          return;
+        }
+
+        console.log("Colegio:", colegioSeleccionado);
+        console.log("Password:", password);
+        const resultado = await login(
+          Number(colegioSeleccionado),
+          password
+        );
+
+        await AsyncStorage.setItem("token", resultado.token);
+        await AsyncStorage.setItem(
+          "colegioId",
+          resultado.colegio.id.toString()
+        );
+        router.replace("/(drawer)");
+
+      } catch (error) {
+        alert("Perfil o contraseña incorrectos");
+        console.error(error);
+      }
+    };
 
     const [listaColegios, setListaColegios] = useState([]);
     const [colegioSeleccionado, setColegioSeleccionado] = useState(null);
     const [loadingData, setLoadingData] = useState(true);
+    const [password, setPassword] = useState("");
 
     // Cargar dropdown al iniciar
     useEffect(() => {
@@ -45,10 +72,15 @@ export default function LoginScreen() {
             value={colegioSeleccionado}
             onChange={(item) => setColegioSeleccionado(item.value)}
           />
-          <TextInput placeholder="Contraseña"
+          <TextInput
+              placeholder="Contraseña"
               placeholderTextColor="#ccc"
-              style={styles.input}></TextInput>
-          <TouchableOpacity style={styles.button} onPress={navToDash}>
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              style={styles.input}
+          />
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
             <Text style={styles.buttonText}>INGRESAR</Text>
           </TouchableOpacity>
         </View>

@@ -1,25 +1,42 @@
-import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth.middleware.js';
-import { 
-  getAlumnos, 
-  getAlumnoId, 
+import { Router } from "express";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import {
+  getAlumnos,
+  getAlumnoId,
   getPorCurso,
-  createAlumno, 
-  updateAlumno, 
+  createAlumno,
+  updateAlumno,
   deleteAlumno,
-  obtenerDetalle
-} from '../controllers/alumno.controller.js';
+  obtenerDetalle,
+  importarAlumnos
+} from "../controllers/alumno.controller.js";
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', getAlumnos);     
-router.get('/:id', getAlumnoId);  
-router.get('/', getPorCurso); 
-router.post('/', createAlumno);   
-router.put('/:id', updateAlumno);  
-router.delete('/:id', deleteAlumno); 
-router.get('/:id', obtenerDetalle); 
+// Todos los alumnos del colegio
+router.get("/", getAlumnos);
+
+// Alumnos de un curso
+router.get("/curso/:cursoId", getPorCurso);
+
+// Detalle de un alumno
+router.get("/:id", getAlumnoId);
+
+// Estadísticas / detalle completo
+router.get("/:id/detalle", obtenerDetalle);
+
+// Crear alumno individual
+router.post("/", createAlumno);
+
+// Importación masiva
+router.post("/curso/:cursoId/importar", importarAlumnos);
+
+// Editar
+router.put("/:id", updateAlumno);
+
+// Eliminar
+router.delete("/:id", deleteAlumno);
 
 export default router;

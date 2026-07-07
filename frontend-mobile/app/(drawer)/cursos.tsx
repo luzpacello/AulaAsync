@@ -1,18 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Curso } from '@/src/types/schema'; // Importamos tu interfaz real
+import { Curso } from '@/src/types/schema';
+import { getCursos, createCurso } from '@/src/services/curso'; 
 
 export default function CursosScreen() {
   const router = useRouter();
 
-  // 1. Mock de datos iniciales basado en tu interfaz Curso
-  const [cursos, setCursos] = useState<Curso[]>([
-    { id: 101, anio: 4, division: 'A', orientacion: 'Computación', ciclo: 'Superior', colegioId: 10 },
-    { id: 102, anio: 5, division: 'B', orientacion: 'Informática', ciclo: 'Superior', colegioId: 10 },
-    { id: 103, anio: 1, division: 'C', orientacion: null, ciclo: 'Básico', colegioId: 10 },
-  ]);
+  const [cursos, setCursos] = useState<Curso[]>([]);
 
   // Estados para búsqueda y filtros
   const [busqueda, setBusqueda] = useState('');
@@ -24,7 +20,6 @@ export default function CursosScreen() {
   const [nuevoCiclo, setNuevoCiclo] = useState('Superior');
   const [nuevaOrientacion, setNuevaOrientacion] = useState('');
 
-  // 2. Lógica de Filtrado (Buscador)
   const cursosFiltrados = useMemo(() => {
     return cursos.filter(c => 
       `${c.anio} ${c.division} ${c.orientacion || ''}`
@@ -33,20 +28,46 @@ export default function CursosScreen() {
     );
   }, [busqueda, cursos]);
 
-  const agregarCurso = () => {
-    if (nuevoAnio && nuevaDivision) {
-      const nuevoObj: Curso = {
-        id: Date.now(),
-        anio: parseInt(nuevoAnio),
+  useEffect(() => {
+    cargarCursos();
+  }, []);
+
+  const cargarCursos = async () => {
+    try {
+      const data = await getCursos();
+      setCursos(data);
+    } catch (error) {
+      console.error(error);
+      alert("No se pudieron cargar los cursos");
+    }
+  };
+
+  const agregarCurso = async () => {
+    try {
+      if (!nuevoAnio || !nuevaDivision) {
+        alert("Complete los campos obligatorios");
+        return;
+      }
+
+      await createCurso({
+        anio: Number(nuevoAnio),
         division: nuevaDivision.toUpperCase(),
         ciclo: nuevoCiclo,
         orientacion: nuevaOrientacion || null,
-        colegioId: 10, // Hardcoded por ahora
-      };
-      setCursos([...cursos, nuevoObj]);
+      });
+
+      await cargarCursos();
+
       setModalVisible(false);
-      // Limpiar campos
-      setNuevoAnio(''); setNuevaDivision(''); setNuevaOrientacion('');
+
+      setNuevoAnio("");
+      setNuevaDivision("");
+      setNuevoCiclo("Superior");
+      setNuevaOrientacion("");
+
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo crear el curso");
     }
   };
 

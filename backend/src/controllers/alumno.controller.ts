@@ -154,20 +154,39 @@ export const deleteAlumno = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-/* async obtenerDetalleAlumno(alumnoId: number) {
-    return await prisma.alumno.findUnique({
-      where: { id: alumnoId },
-      include: {
-        notas: {
-          include: { evaluacion: true }
-        },
-        entregas: {
-          include: { tp: true }
-        },
-        asistencias: true
-      }
-    });
-  }*/
+export const importarAlumnos = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const colegioId = req.user?.colegioId;
+    const cursoId = Number(req.params.cursoId);
+
+    if (!colegioId)
+      return res.status(401).json({ error: "No autorizado" });
+
+    const curso = await CursoService.getCursoId(cursoId);
+
+    if (!curso || curso.colegioId !== colegioId)
+      return res.status(404).json({ error: "Curso no encontrado" });
+
+    const { alumnos } = req.body;
+
+    if (!Array.isArray(alumnos))
+      return res.status(400).json({ error: "Lista inválida" });
+
+    const resultado = await AlumnoService.importarAlumnos(
+      cursoId,
+      alumnos
+    );
+
+    res.status(201).json(resultado);
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const obtenerDetalle = async (req: Request, res: Response, next: NextFunction) => {
   try {
