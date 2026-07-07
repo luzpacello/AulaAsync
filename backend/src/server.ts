@@ -9,6 +9,7 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 import cursoRoutes from "./routes/curso.routes.js";
 import materiaRoutes from "./routes/materia.routes.js";
 import cursadaRoutes from "./routes/cursada.routes.js";
+import alumnoRoutes from "./routes/alumno.routes.js";
 
 import evaluacionRoutes from "./routes/evaluacion.routes.js";
 import tpRoutes from "./routes/tp.routes.js";
@@ -28,6 +29,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/cursos", cursoRoutes);
 app.use("/api/materias", materiaRoutes);
 app.use("/api/cursadas", cursadaRoutes);
+app.use("/api/alumnos", alumnoRoutes);
 
 app.use("/api/evaluaciones", evaluacionRoutes);
 app.use("/api/tps", tpRoutes);
