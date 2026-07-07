@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, S
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getMaterias, createMateria } from '@/src/services/materia';
+import { Dropdown } from "react-native-element-dropdown";
+import { getCursos } from "@/src/services/curso";
+import { createCursada } from "@/src/services/cursada";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function MateriasScreen() {
@@ -10,12 +13,10 @@ export default function MateriasScreen() {
   const [materias, setMaterias] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Estados para Modales
   const [modalMateriaVisible, setModalMateriaVisible] = useState(false);
   const [modalCursadaVisible, setModalCursadaVisible] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  // Estados de Formulario
   const [nuevaMateria, setNuevaMateria] = useState('');
   const [materiaSeleccionada, setMateriaSeleccionada] = useState<number | null>(null);
 
@@ -24,6 +25,8 @@ export default function MateriasScreen() {
   const [diaSeleccionado, setDiaSeleccionado] = useState('Lunes');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
+  const [cursosDisponibles, setCursosDisponibles] = useState<any[]>([]);
+  const [cursoSeleccionado, setCursoSeleccionado] = useState<number | null>(null);
 
   const cargarMaterias = async () => {
     try {
@@ -136,9 +139,19 @@ export default function MateriasScreen() {
 
                 <TouchableOpacity
                   style={styles.addCursadaBtn}
-                  onPress={() => {
-                    setMateriaSeleccionada(item.id);
-                    setModalCursadaVisible(true);
+                  onPress={async () => {
+                      setMateriaSeleccionada(item.id);
+
+                      const cursos = await getCursos();
+
+                      setCursosDisponibles(
+                          cursos.map((c:any)=>({
+                              label:`${c.anio}° ${c.division}`,
+                              value:c.id
+                          }))
+                      );
+
+                      setModalCursadaVisible(true);
                   }}
                 >
                   <Text style={styles.addCursadaBtnText}>
@@ -179,95 +192,212 @@ export default function MateriasScreen() {
       </Modal>
 
       {/* MODAL AGREGAR CURSADA */}
-<Modal visible={modalCursadaVisible} animationType="fade" transparent>
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Configurar Cursada</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Ej: 4to Año - División A"
-        value={nuevoCurso}
-        onChangeText={setNuevoCurso}
-      />
-
-      <View style={styles.separator} />
-      
-      <Text style={styles.subTitle}>Agregar Días y Horarios</Text>
-      
-      {/* Formulario rápido para un día */}
-      <View style={styles.row}>
-        <TextInput 
-          style={[styles.input, {flex: 2}]} 
-          placeholder="Día (L, M, Mi...)" 
-          value={diaSeleccionado}
-          onChangeText={setDiaSeleccionado}
-        />
-        <TextInput 
-          style={[styles.input, {flex: 1, marginLeft: 5}]} 
-          placeholder="Inicio" 
-          value={horaInicio}
-          onChangeText={setHoraInicio}
-        />
-        <TextInput 
-          style={[styles.input, {flex: 1, marginLeft: 5}]} 
-          placeholder="Fin" 
-          value={horaFin}
-          onChangeText={setHoraFin}
-        />
-      </View>
-
-      <TouchableOpacity 
-        style={styles.btnAddDetail} 
-        onPress={() => {
-          if(horaInicio && horaFin){
-            setHorariosTemporales([...horariosTemporales, { dia: diaSeleccionado, inicio: horaInicio, fin: horaFin }]);
-            setHoraInicio(''); setHoraFin(''); // Limpiamos para el próximo
-          }
-        }}
+<Modal
+          visible={modalCursadaVisible}
+          animationType="slide"
+          transparent
       >
-        <Text style={styles.btnAddDetailText}>+ Agregar Día</Text>
-      </TouchableOpacity>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
 
-      {/* Lista de días agregados (maqueta visual) */}
-      <View style={styles.tempList}>
-        {horariosTemporales.map((h, i) => (
-          <View key={i} style={styles.tempItem}>
-            <Text style={styles.tempItemText}>{h.dia}: {h.inicio} - {h.fin}</Text>
-            <TouchableOpacity onPress={() => setHorariosTemporales(horariosTemporales.filter((_, idx) => idx !== i))}>
-                <MaterialCommunityIcons name="delete" size={18} color="red" />
+            <Text style={styles.modalTitle}>
+                Nueva Cursada
+            </Text>
+
+            <Dropdown
+                style={styles.input}
+                data={cursosDisponibles}
+                labelField="label"
+                valueField="value"
+                placeholder="Seleccionar curso..."
+                value={cursoSeleccionado}
+                onChange={(item)=>{
+                    setCursoSeleccionado(item.value);
+                }}
+            />
+
+            <View style={styles.separator}/>
+
+            <Text style={styles.subTitle}>
+                Horarios
+            </Text>
+
+            <View style={styles.row}>
+
+                <TextInput
+                    style={[styles.input,{flex:2}]}
+                    placeholder="Día"
+                    value={diaSeleccionado}
+                    onChangeText={setDiaSeleccionado}
+                />
+
+                <TextInput
+                    style={[styles.input,{flex:1,marginLeft:5}]}
+                    placeholder="Inicio"
+                    value={horaInicio}
+                    onChangeText={setHoraInicio}
+                />
+
+                <TextInput
+                    style={[styles.input,{flex:1,marginLeft:5}]}
+                    placeholder="Fin"
+                    value={horaFin}
+                    onChangeText={setHoraFin}
+                />
+
+            </View>
+
+            <TouchableOpacity
+                style={styles.btnAddDetail}
+                onPress={()=>{
+
+                    if(!horaInicio || !horaFin)
+                        return;
+
+                    setHorariosTemporales([
+                        ...horariosTemporales,
+                        {
+                            dia:diaSeleccionado,
+                            inicio:horaInicio,
+                            fin:horaFin
+                        }
+                    ]);
+
+                    setHoraInicio("");
+                    setHoraFin("");
+
+                }}
+            >
+
+                <Text style={styles.btnAddDetailText}>
+                    + Agregar horario
+                </Text>
+
             </TouchableOpacity>
-          </View>
-        ))}
-      </View>
 
-      <View style={styles.modalButtons}>
-        <TouchableOpacity 
-          style={styles.btnCancel} 
-          onPress={() => {
-            setModalCursadaVisible(false);
-            setHorariosTemporales([]);
-          }}
-        >
-          <Text>Cancelar</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.btnSave} 
-          onPress={() => {
-            // Aquí iría la lógica para guardar en la materia correspondiente
-            console.log("Guardando:", { nuevoCurso, horariosTemporales });
-            setModalCursadaVisible(false);
-            setHorariosTemporales([]);
-            setNuevoCurso('');
-          }}
-        >
-          <Text style={{color: 'white', fontWeight: 'bold'}}>Guardar Cursada</Text>
-        </TouchableOpacity>
+            <ScrollView
+                style={{
+                    maxHeight:150,
+                    marginBottom:20
+                }}
+            >
+
+                {horariosTemporales.map((h,index)=>(
+
+                    <View
+                        key={index}
+                        style={styles.tempItem}
+                    >
+
+                        <Text>
+                            {h.dia} • {h.inicio} - {h.fin}
+                        </Text>
+
+                        <TouchableOpacity
+                            onPress={()=>{
+
+                                setHorariosTemporales(
+                                    horariosTemporales.filter(
+                                        (_,i)=>i!==index
+                                    )
+                                );
+
+                            }}
+                        >
+
+                            <MaterialCommunityIcons
+                                name="delete"
+                                size={20}
+                                color="red"
+                            />
+
+                        </TouchableOpacity>
+
+                    </View>
+
+                ))}
+
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+
+                <TouchableOpacity
+                    style={styles.btnCancel}
+                    onPress={()=>{
+
+                        setModalCursadaVisible(false);
+                        setCursoSeleccionado(null);
+                        setHorariosTemporales([]);
+                        setHoraInicio("");
+                        setHoraFin("");
+
+                    }}
+                >
+
+                    <Text>Cancelar</Text>
+
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.btnSave}
+                    onPress={async()=>{
+
+                        try{
+
+                            if(!cursoSeleccionado){
+                                alert("Seleccione un curso");
+                                return;
+                            }
+
+                            await createCursada({
+
+                                materiaId:materiaSeleccionada,
+
+                                cursoId:cursoSeleccionado,
+
+                                horarios:horariosTemporales
+
+                            });
+
+                            await cargarMaterias();
+
+                            setModalCursadaVisible(false);
+
+                            setCursoSeleccionado(null);
+
+                            setHorariosTemporales([]);
+
+                            setHoraInicio("");
+
+                            setHoraFin("");
+
+                        }catch(e){
+
+                            console.log(e);
+
+                            alert("No se pudo crear la cursada");
+
+                        }
+
+                    }}
+                >
+
+                    <Text
+                        style={{
+                            color:"white",
+                            fontWeight:"bold"
+                        }}
+                    >
+                        Guardar
+                    </Text>
+
+                </TouchableOpacity>
+
+            </View>
+
+          </View>
       </View>
-    </View>
-  </View>
-</Modal>
+  </Modal>
     </View>
   );
 }

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
+import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
@@ -8,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useLocalSearchParams, router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authFetch } from "@/src/services/api";
 
@@ -35,9 +35,11 @@ export default function CursoDetalle() {
     }
   }
 
-  useEffect(() => {
-    cargarCurso();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarCurso();
+    }, [id])
+  );
 
   if (loading) {
     return (
