@@ -16,16 +16,10 @@ export const login = async (req: Request, res: Response) => {
     res.json(resultado);
 
   } catch (error) {
-
-    if (error instanceof Error &&
-        error.message === "Credenciales inválidas") {
-      return res.status(401).json({
-        error: "Perfil o contraseña incorrectos"
-      });
-    }
+    console.error("LOGIN ERROR:", error);
 
     return res.status(500).json({
-      error: "Error en el servidor"
+      error: error instanceof Error ? error.message : "Error desconocido"
     });
   }
 };
