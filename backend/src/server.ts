@@ -32,20 +32,21 @@ app.use("/api/cursadas", cursadaRoutes);
 app.use("/api/evaluaciones", evaluacionRoutes);
 app.use("/api/tps", tpRoutes);
 
-app.use(
-  (
-    err: any,
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ) => {
-    console.error(err);
+app.use((
+  err: any,
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  console.error("========== ERROR ==========");
+  console.error(err);
+  console.error("===========================");
 
-    res.status(err.status || 500).json({
-      error: err.message || "Error interno del servidor",
-    });
-  }
-);
+  res.status(err.status || 500).json({
+    error: err.message,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
